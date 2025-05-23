@@ -315,7 +315,7 @@ const Purchases: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{purchase.productName}</div>
-                    <div className="text-xs text-gray-500">${purchase.unitPrice.toFixed(2)} per unit</div>
+                    <div className="text-xs text-gray-500">RS {purchase.unitPrice.toFixed(2)} per unit</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {purchase.supplierName}
@@ -329,7 +329,7 @@ const Purchases: React.FC = () => {
                     {purchase.quantity} units
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">${purchase.totalPrice.toFixed(2)}</div>
+                    <div className="text-sm font-medium text-gray-900">Rs {purchase.totalPrice.toFixed(2)}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <Button 
@@ -395,7 +395,7 @@ const Purchases: React.FC = () => {
               <option value="">Select a product</option>
               {products.map(product => (
                 <option key={product.id} value={product.id}>
-                  {product.name} (${product.unitPrice.toFixed(2)} per {product.unit})
+                  {product.name} (Rs {product.unitPrice.toFixed(2)} per {product.unit})
                 </option>
               ))}
             </select>
