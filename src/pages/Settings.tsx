@@ -3,48 +3,91 @@ import { Save, User, Building, Bell, Database, Shield, CheckCircle } from 'lucid
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 
-// Define types for better TypeScript support
+// Type definitions for settings
+interface UserProfile {
+  name: string;
+  email: string;
+  password: string;
+}
+
+interface BusinessInfo {
+  businessName: string;
+  businessAddress: string;
+  businessPhone: string;
+}
+
+interface Notifications {
+  emailNotifications: boolean;
+  lowStockThreshold: 'strict' | 'moderate' | 'relaxed' | 'custom';
+}
+
+interface DataManagement {
+  autoBackup: boolean;
+  backupLocation: string;
+}
+
+interface Security {
+  twoFactorAuth: boolean;
+  sessionTimeout: number;
+}
+
+interface Settings {
+  userProfile: UserProfile;
+  businessInfo: BusinessInfo;
+  notifications: Notifications;
+  dataManagement: DataManagement;
+  security: Security;
+}
+
+type SettingsSection = keyof Settings;
+type SettingsError = Record<string, string>;
+
+interface SaveStatus {
+  show: boolean;
+  success: boolean;
+}
+
 interface FieldOption {
   value: string;
   label: string;
 }
 
-interface Field {
+interface SettingField {
   key: string;
   label: string;
-  type: 'text' | 'email' | 'password' | 'tel' | 'number' | 'checkbox' | 'select' | 'button';
+  type: 'text' | 'email' | 'password' | 'tel' | 'checkbox' | 'select' | 'number' | 'button';
   value?: any;
-  onChange?: (e: any) => void;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   error?: string;
   description?: string;
-  options?: FieldOption[];
-  buttonLabel?: string;
-  onClick?: () => void;
-  variant?: 'primary' | 'outline';
   disabled?: boolean;
+  options?: FieldOption[];
   min?: number;
   max?: number;
+  buttonLabel?: string;
+  onClick?: () => void;
+  variant?: 'primary' | 'outline' | 'secondary' | 'success' | 'danger' | 'warning';
 }
 
 interface SettingSection {
   title: string;
-  key: string;
+  key: SettingsSection;
   icon: React.ReactNode;
-  fields: Field[];
+  fields: SettingField[];
 }
 
 const Settings: React.FC = () => {
-  // Initial settings data structure
-  const initialSettings = {
+  // Initial settings data structure with proper typing
+  const initialSettings: Settings = {
     userProfile: {
-      name: 'Ihsan',
-      email: 'admin@msanan7@gmail.com',
+      name: 'Admin User',
+      email: 'admin@example.com',
       password: '********',
     },
     businessInfo: {
       businessName: 'Spice Trading Co.',
-      businessAddress: 'Akurana',
-      businessPhone: '077 5925383',
+      businessAddress: '123 Spice Lane, Flavor City',
+      businessPhone: '(555) 123-4567',
     },
     notifications: {
       emailNotifications: true,
@@ -60,41 +103,47 @@ const Settings: React.FC = () => {
     }
   };
 
-  // State for settings and validation
-  const [settings, setSettings] = useState(initialSettings);
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const [isFormDirty, setIsFormDirty] = useState(false);
-  const [saveStatus, setSaveStatus] = useState({ show: false, success: false });
+  // State for settings and validation with proper typing
+  const [settings, setSettings] = useState<Settings>(initialSettings);
+  const [errors, setErrors] = useState<SettingsError>({});
+  const [isFormDirty, setIsFormDirty] = useState<boolean>(false);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>({ show: false, success: false });
 
-  // Handle input changes
-  const handleInputChange = (section: string, field: string, value: any) => {
+  // Handle input changes with proper typing
+  const handleInputChange = (section: SettingsSection, field: string, value: any): void => {
     setSettings(prevSettings => ({
       ...prevSettings,
       [section]: {
-        ...prevSettings[section as keyof typeof prevSettings],
+        ...prevSettings[section],
         [field]: value
       }
     }));
     setIsFormDirty(true);
     
     // Clear error when field is changed
-    if (errors[`${section}.${field}`]) {
+    const errorKey = `${section}.${field}`;
+    if (errors[errorKey]) {
       setErrors(prevErrors => {
         const newErrors = {...prevErrors};
-        delete newErrors[`${section}.${field}`];
+        delete newErrors[errorKey];
         return newErrors;
       });
     }
   };
 
-  // Validate form
+  // Validate form with improved validation
   const validateForm = (): boolean => {
-    const newErrors: { [key: string]: string } = {};
+    const newErrors: SettingsError = {};
     
-    // Validate email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // Validate email with more comprehensive regex
+    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
     if (!emailRegex.test(settings.userProfile.email)) {
       newErrors['userProfile.email'] = 'Please enter a valid email address';
+    }
+    
+    // Validate name
+    if (!settings.userProfile.name.trim()) {
+      newErrors['userProfile.name'] = 'Name cannot be empty';
     }
     
     // Validate business name
@@ -102,10 +151,11 @@ const Settings: React.FC = () => {
       newErrors['businessInfo.businessName'] = 'Business name cannot be empty';
     }
     
-    // Validate phone number format (simple validation)
-    const phoneRegex = /^[\d\s()+-]{10,15}$/;
-    if (!phoneRegex.test(settings.businessInfo.businessPhone)) {
-      newErrors['businessInfo.businessPhone'] = 'Please enter a valid phone number';
+    // Validate phone number format (improved validation)
+    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+    const cleanPhone = settings.businessInfo.businessPhone.replace(/[\s()+-]/g, '');
+    if (!phoneRegex.test(cleanPhone) || cleanPhone.length < 10) {
+      newErrors['businessInfo.businessPhone'] = 'Please enter a valid phone number (minimum 10 digits)';
     }
     
     // Validate backup location if auto backup is enabled
@@ -122,21 +172,29 @@ const Settings: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle save
-  const handleSave = () => {
+  // Handle save with proper error handling
+  const handleSave = (): void => {
     if (validateForm()) {
       // Here you would typically make an API call to save the settings
       console.log('Saving settings:', settings);
       
-      // Simulate API call
+      // Simulate API call with proper error handling
       setTimeout(() => {
-        setSaveStatus({ show: true, success: true });
-        setIsFormDirty(false);
-        
-        // Auto hide success message after 3 seconds
-        setTimeout(() => {
-          setSaveStatus({ show: false, success: true });
-        }, 3000);
+        try {
+          // Simulate potential API failure (uncomment to test error handling)
+          // if (Math.random() > 0.8) throw new Error('API Error');
+          
+          setSaveStatus({ show: true, success: true });
+          setIsFormDirty(false);
+          
+          // Auto hide success message after 3 seconds
+          setTimeout(() => {
+            setSaveStatus({ show: false, success: true });
+          }, 3000);
+        } catch (error) {
+          setSaveStatus({ show: true, success: false });
+          console.error('Failed to save settings:', error);
+        }
       }, 800);
     } else {
       setSaveStatus({ show: true, success: false });
@@ -148,14 +206,14 @@ const Settings: React.FC = () => {
     }
   };
 
-  // Handle import/export actions
-  const handleImportData = () => {
+  // Handle import/export actions with proper typing
+  const handleImportData = (): void => {
     // Simulate file picker dialog
     alert('Import functionality would open a file picker dialog');
     // In a real implementation, you would open a file picker and process the selected file
   };
 
-  const handleExportData = () => {
+  const handleExportData = (): void => {
     // Simulate export process
     alert('Export functionality would generate and download data file');
     // In a real implementation, you would generate and download data
@@ -172,14 +230,15 @@ const Settings: React.FC = () => {
           label: 'Name', 
           type: 'text',
           value: settings.userProfile.name,
-          onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('userProfile', 'name', e.target.value)
+          onChange: (e) => handleInputChange('userProfile', 'name', e.target.value),
+          error: errors['userProfile.name']
         },
         { 
           key: 'email',
           label: 'Email', 
           type: 'email',
           value: settings.userProfile.email,
-          onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('userProfile', 'email', e.target.value),
+          onChange: (e) => handleInputChange('userProfile', 'email', e.target.value),
           error: errors['userProfile.email']
         },
         { 
@@ -187,7 +246,7 @@ const Settings: React.FC = () => {
           label: 'Password', 
           type: 'password',
           value: settings.userProfile.password,
-          onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('userProfile', 'password', e.target.value)
+          onChange: (e) => handleInputChange('userProfile', 'password', e.target.value)
         },
       ],
     },
@@ -201,7 +260,7 @@ const Settings: React.FC = () => {
           label: 'Business Name', 
           type: 'text',
           value: settings.businessInfo.businessName,
-          onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('businessInfo', 'businessName', e.target.value),
+          onChange: (e) => handleInputChange('businessInfo', 'businessName', e.target.value),
           error: errors['businessInfo.businessName']
         },
         { 
@@ -209,14 +268,14 @@ const Settings: React.FC = () => {
           label: 'Business Address', 
           type: 'text',
           value: settings.businessInfo.businessAddress,
-          onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('businessInfo', 'businessAddress', e.target.value)
+          onChange: (e) => handleInputChange('businessInfo', 'businessAddress', e.target.value)
         },
         { 
           key: 'businessPhone',
           label: 'Business Phone', 
           type: 'tel',
           value: settings.businessInfo.businessPhone,
-          onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('businessInfo', 'businessPhone', e.target.value),
+          onChange: (e) => handleInputChange('businessInfo', 'businessPhone', e.target.value),
           error: errors['businessInfo.businessPhone']
         },
       ],
@@ -231,7 +290,7 @@ const Settings: React.FC = () => {
           label: 'Email Notifications', 
           type: 'checkbox', 
           value: settings.notifications.emailNotifications,
-          onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('notifications', 'emailNotifications', e.target.checked),
+          onChange: (e) => handleInputChange('notifications', 'emailNotifications', (e.target as HTMLInputElement).checked),
           description: 'Receive email alerts for low stock and other important events'
         },
         { 
@@ -239,7 +298,7 @@ const Settings: React.FC = () => {
           label: 'Low Stock Threshold', 
           type: 'select', 
           value: settings.notifications.lowStockThreshold,
-          onChange: (e: React.ChangeEvent<HTMLSelectElement>) => handleInputChange('notifications', 'lowStockThreshold', e.target.value),
+          onChange: (e) => handleInputChange('notifications', 'lowStockThreshold', e.target.value),
           options: [
             { value: 'strict', label: 'Strict (Exactly at min level)' },
             { value: 'moderate', label: 'Moderate (10% below min level)' },
@@ -260,7 +319,7 @@ const Settings: React.FC = () => {
           label: 'Auto Backup', 
           type: 'checkbox', 
           value: settings.dataManagement.autoBackup,
-          onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('dataManagement', 'autoBackup', e.target.checked),
+          onChange: (e) => handleInputChange('dataManagement', 'autoBackup', (e.target as HTMLInputElement).checked),
           description: 'Automatically back up data daily'
         },
         { 
@@ -268,7 +327,7 @@ const Settings: React.FC = () => {
           label: 'Backup Location', 
           type: 'text', 
           value: settings.dataManagement.backupLocation,
-          onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('dataManagement', 'backupLocation', e.target.value),
+          onChange: (e) => handleInputChange('dataManagement', 'backupLocation', e.target.value),
           disabled: !settings.dataManagement.autoBackup,
           error: errors['dataManagement.backupLocation']
         },
@@ -300,7 +359,7 @@ const Settings: React.FC = () => {
           label: 'Enable Two-Factor Authentication', 
           type: 'checkbox', 
           value: settings.security.twoFactorAuth,
-          onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('security', 'twoFactorAuth', e.target.checked),
+          onChange: (e) => handleInputChange('security', 'twoFactorAuth', (e.target as HTMLInputElement).checked),
           description: 'Add an extra layer of security to your account'
         },
         { 
@@ -308,7 +367,7 @@ const Settings: React.FC = () => {
           label: 'Session Timeout (minutes)', 
           type: 'number', 
           value: settings.security.sessionTimeout,
-          onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('security', 'sessionTimeout', parseInt(e.target.value, 10) || 30),
+          onChange: (e) => handleInputChange('security', 'sessionTimeout', parseInt(e.target.value, 10) || 30),
           min: 5,
           max: 120,
           error: errors['security.sessionTimeout']
