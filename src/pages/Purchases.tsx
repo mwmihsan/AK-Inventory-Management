@@ -15,17 +15,32 @@ const Purchases: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [isDateRangeModalOpen, setIsDateRangeModalOpen] = useState(false);
+  const [isPaymentMethodModalOpen, setIsPaymentMethodModalOpen] = useState(false);
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
+  const [dateRange, setDateRange] = useState({ startDate: '', endDate: '' });
+  const [selectedPaymentMethods, setSelectedPaymentMethods] = useState<('cash' | 'credit' | 'cheque')[]>([]);
   const [newPurchase, setNewPurchase] = useState<Partial<Purchase>>({
     date: new Date().toISOString().split('T')[0],
     paymentMethod: 'cash',
   });
   
-  // Filter purchases based on search term
-  const filteredPurchases = purchases.filter(purchase => 
-    purchase.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    purchase.supplierName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter purchases based on search term, date range, and payment methods
+  const filteredPurchases = purchases.filter(purchase => {
+    const matchesSearch = 
+      purchase.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      purchase.supplierName.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesDateRange = 
+      (!dateRange.startDate || new Date(purchase.date) >= new Date(dateRange.startDate)) &&
+      (!dateRange.endDate || new Date(purchase.date) <= new Date(dateRange.endDate));
+
+    const matchesPaymentMethod = 
+      selectedPaymentMethods.length === 0 || 
+      selectedPaymentMethods.includes(purchase.paymentMethod);
+
+    return matchesSearch && matchesDateRange && matchesPaymentMethod;
+  });
   
   // Sort purchases
   const sortedPurchases = [...filteredPurchases].sort((a, b) => {
@@ -62,6 +77,36 @@ const Purchases: React.FC = () => {
       case 'cheque': return 'warning';
       default: return 'default';
     }
+  };
+
+  // Handle date range filter
+  const handleApplyDateRange = () => {
+    setIsDateRangeModalOpen(false);
+  };
+
+  const handleResetDateRange = () => {
+    setDateRange({ startDate: '', endDate: '' });
+    setIsDateRangeModalOpen(false);
+  };
+
+  // Handle payment method filter
+  const togglePaymentMethod = (method: 'cash' | 'credit' | 'cheque') => {
+    setSelectedPaymentMethods(prev => {
+      if (prev.includes(method)) {
+        return prev.filter(m => m !== method);
+      } else {
+        return [...prev, method];
+      }
+    });
+  };
+
+  const handleApplyPaymentMethods = () => {
+    setIsPaymentMethodModalOpen(false);
+  };
+
+  const handleResetPaymentMethods = () => {
+    setSelectedPaymentMethods([]);
+    setIsPaymentMethodModalOpen(false);
   };
 
   // Handle product selection
@@ -166,15 +211,23 @@ const Purchases: React.FC = () => {
               variant="outline" 
               icon={<Calendar size={16} />}
               className="lg:w-auto"
+              onClick={() => setIsDateRangeModalOpen(true)}
             >
               Date Range
+              {(dateRange.startDate || dateRange.endDate) && (
+                <span className="ml-2 w-2 h-2 bg-blue-500 rounded-full"></span>
+              )}
             </Button>
             <Button 
               variant="outline" 
               icon={<CreditCard size={16} />}
               className="lg:w-auto"
+              onClick={() => setIsPaymentMethodModalOpen(true)}
             >
               Payment Method
+              {selectedPaymentMethods.length > 0 && (
+                <span className="ml-2 w-2 h-2 bg-blue-500 rounded-full"></span>
+              )}
             </Button>
           </div>
         </div>
@@ -220,7 +273,6 @@ const Purchases: React.FC = () => {
                   </div>
                 </th>
                 <th 
-                   
                   scope="col" 
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
@@ -449,11 +501,11 @@ const Purchases: React.FC = () => {
             </div>
             <div>
               <h4 className="text-sm font-medium text-gray-500">Unit Price</h4>
-              <p className="mt-1 text-sm text-gray-900">${selectedPurchase.unitPrice.toFixed(2)}</p>
+              <p className="mt-1 text-sm text-gray-900">Rs {selectedPurchase.unitPrice.toFixed(2)}</p>
             </div>
             <div>
               <h4 className="text-sm font-medium text-gray-500">Total Price</h4>
-              <p className="mt-1 text-sm text-gray-900">${selectedPurchase.totalPrice.toFixed(2)}</p>
+              <p className="mt-1 text-sm text-gray-900">Rs {selectedPurchase.totalPrice.toFixed(2)}</p>
             </div>
             <div>
               <h4 className="text-sm font-medium text-gray-500">Payment Method</h4>
@@ -527,14 +579,14 @@ const Purchases: React.FC = () => {
                 <tr>
                   <td className="py-2 text-sm text-gray-900">{selectedPurchase.productName}</td>
                   <td className="py-2 text-sm text-gray-900 text-right">{selectedPurchase.quantity}</td>
-                  <td className="py-2 text-sm text-gray-900 text-right">${selectedPurchase.unitPrice.toFixed(2)}</td>
-                  <td className="py-2 text-sm text-gray-900 text-right">${selectedPurchase.totalPrice.toFixed(2)}</td>
+                  <td className="py-2 text-sm text-gray-900 text-right">Rs {selectedPurchase.unitPrice.toFixed(2)}</td>
+                  <td className="py-2 text-sm text-gray-900 text-right">Rs {selectedPurchase.totalPrice.toFixed(2)}</td>
                 </tr>
               </tbody>
               <tfoot>
                 <tr className="border-t">
                   <td colSpan={3} className="py-2 text-sm font-medium text-gray-900 text-right">Total Amount:</td>
-                  <td className="py-2 text-sm font-medium text-gray-900 text-right">${selectedPurchase.totalPrice.toFixed(2)}</td>
+                  <td className="py-2 text-sm font-medium text-gray-900 text-right">Rs {selectedPurchase.totalPrice.toFixed(2)}</td>
                 </tr>
               </tfoot>
             </table>
@@ -580,6 +632,73 @@ const Purchases: React.FC = () => {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Date Range Modal */}
+      <Modal
+        isOpen={isDateRangeModalOpen}
+        onClose={() => setIsDateRangeModalOpen(false)}
+        title="Filter by Date Range"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Start Date</label>
+            <input
+              type="date"
+              value={dateRange.startDate}
+              onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">End Date</label>
+            <input
+              type="date"
+              value={dateRange.endDate}
+              onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+          <div className="flex justify-end space-x-3 mt-6">
+            <Button variant="outline" onClick={handleResetDateRange}>
+              Reset
+            </Button>
+            <Button variant="primary" onClick={handleApplyDateRange}>
+              Apply
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Payment Method Modal */}
+      <Modal
+        isOpen={isPaymentMethodModalOpen}
+        onClose={() => setIsPaymentMethodModalOpen(false)}
+        title="Filter by Payment Method"
+      >
+        <div className="space-y-4">
+          <div className="space-y-2">
+            {(['cash', 'credit', 'cheque'] as const).map((method) => (
+              <label key={method} className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={selectedPaymentMethods.includes(method)}
+                  onChange={() => togglePaymentMethod(method)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700 capitalize">{method}</span>
+              </label>
+            ))}
+          </div>
+          <div className="flex justify-end space-x-3 mt-6">
+            <Button variant="outline" onClick={handleResetPaymentMethods}>
+              Reset
+            </Button>
+            <Button variant="primary" onClick={handleApplyPaymentMethods}>
+              Apply
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

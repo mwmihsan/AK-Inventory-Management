@@ -29,34 +29,45 @@ const StockAlerts: React.FC = () => {
     >
       {lowStockProducts.length === 0 ? (
         <div className="text-center py-6 text-gray-500">
-          All stock levels are good!
+          <div className="mb-2">✅</div>
+          <p className="text-sm sm:text-base">All stock levels are good!</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {lowStockProducts.map(product => {
             const status = getStockStatus(product);
             
             return (
-              <div key={product.id} className="flex items-center justify-between border-b pb-3 last:border-0">
-                <div>
-                  <h4 className="font-medium text-gray-800">{product.name}</h4>
-                  <div className="flex items-center mt-1">
-                    <span className="text-sm text-gray-500 mr-2">
+              <div key={product.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b pb-3 last:border-0 space-y-2 sm:space-y-0">
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-medium text-gray-800 text-sm sm:text-base truncate">{product.name}</h4>
+                  <div className="flex flex-wrap items-center mt-1 gap-2">
+                    <span className="text-xs sm:text-sm text-gray-500">
                       Stock: {product.currentStock} {product.unit}
                     </span>
                     <Badge 
                       variant={status === 'critical' ? 'danger' : status === 'low' ? 'warning' : 'info'}
+                      className="text-xs"
                     >
                       {status === 'critical' ? 'Critical' : status === 'low' ? 'Low Stock' : 'Reorder'}
                     </Badge>
                   </div>
                 </div>
-                <div className="text-sm text-gray-700">
+                <div className="text-xs sm:text-sm text-gray-700 flex-shrink-0">
                   Min: {product.minStockLevel} {product.unit}
                 </div>
               </div>
             );
           })}
+          
+          {/* Show summary on mobile if many items */}
+          {lowStockProducts.length > 3 && (
+            <div className="sm:hidden pt-2 text-center">
+              <p className="text-xs text-gray-500">
+                {lowStockProducts.length} items need attention
+              </p>
+            </div>
+          )}
         </div>
       )}
     </Card>

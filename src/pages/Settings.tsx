@@ -3,18 +3,48 @@ import { Save, User, Building, Bell, Database, Shield, CheckCircle } from 'lucid
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 
-const Settings = () => {
+// Define types for better TypeScript support
+interface FieldOption {
+  value: string;
+  label: string;
+}
+
+interface Field {
+  key: string;
+  label: string;
+  type: 'text' | 'email' | 'password' | 'tel' | 'number' | 'checkbox' | 'select' | 'button';
+  value?: any;
+  onChange?: (e: any) => void;
+  error?: string;
+  description?: string;
+  options?: FieldOption[];
+  buttonLabel?: string;
+  onClick?: () => void;
+  variant?: 'primary' | 'outline';
+  disabled?: boolean;
+  min?: number;
+  max?: number;
+}
+
+interface SettingSection {
+  title: string;
+  key: string;
+  icon: React.ReactNode;
+  fields: Field[];
+}
+
+const Settings: React.FC = () => {
   // Initial settings data structure
   const initialSettings = {
     userProfile: {
-      name: 'Admin User',
-      email: 'admin@example.com',
+      name: 'Ihsan',
+      email: 'admin@msanan7@gmail.com',
       password: '********',
     },
     businessInfo: {
       businessName: 'Spice Trading Co.',
-      businessAddress: '123 Spice Lane, Flavor City',
-      businessPhone: '(555) 123-4567',
+      businessAddress: 'Akurana',
+      businessPhone: '077 5925383',
     },
     notifications: {
       emailNotifications: true,
@@ -32,16 +62,16 @@ const Settings = () => {
 
   // State for settings and validation
   const [settings, setSettings] = useState(initialSettings);
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isFormDirty, setIsFormDirty] = useState(false);
   const [saveStatus, setSaveStatus] = useState({ show: false, success: false });
 
   // Handle input changes
-  const handleInputChange = (section, field, value) => {
+  const handleInputChange = (section: string, field: string, value: any) => {
     setSettings(prevSettings => ({
       ...prevSettings,
       [section]: {
-        ...prevSettings[section],
+        ...prevSettings[section as keyof typeof prevSettings],
         [field]: value
       }
     }));
@@ -58,8 +88,8 @@ const Settings = () => {
   };
 
   // Validate form
-  const validateForm = () => {
-    const newErrors = {};
+  const validateForm = (): boolean => {
+    const newErrors: { [key: string]: string } = {};
     
     // Validate email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -131,7 +161,7 @@ const Settings = () => {
     // In a real implementation, you would generate and download data
   };
 
-  const settingSections = [
+  const settingSections: SettingSection[] = [
     {
       title: 'User Profile',
       key: 'userProfile',
@@ -142,14 +172,14 @@ const Settings = () => {
           label: 'Name', 
           type: 'text',
           value: settings.userProfile.name,
-          onChange: (e) => handleInputChange('userProfile', 'name', e.target.value)
+          onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('userProfile', 'name', e.target.value)
         },
         { 
           key: 'email',
           label: 'Email', 
           type: 'email',
           value: settings.userProfile.email,
-          onChange: (e) => handleInputChange('userProfile', 'email', e.target.value),
+          onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('userProfile', 'email', e.target.value),
           error: errors['userProfile.email']
         },
         { 
@@ -157,7 +187,7 @@ const Settings = () => {
           label: 'Password', 
           type: 'password',
           value: settings.userProfile.password,
-          onChange: (e) => handleInputChange('userProfile', 'password', e.target.value)
+          onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('userProfile', 'password', e.target.value)
         },
       ],
     },
@@ -171,7 +201,7 @@ const Settings = () => {
           label: 'Business Name', 
           type: 'text',
           value: settings.businessInfo.businessName,
-          onChange: (e) => handleInputChange('businessInfo', 'businessName', e.target.value),
+          onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('businessInfo', 'businessName', e.target.value),
           error: errors['businessInfo.businessName']
         },
         { 
@@ -179,14 +209,14 @@ const Settings = () => {
           label: 'Business Address', 
           type: 'text',
           value: settings.businessInfo.businessAddress,
-          onChange: (e) => handleInputChange('businessInfo', 'businessAddress', e.target.value)
+          onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('businessInfo', 'businessAddress', e.target.value)
         },
         { 
           key: 'businessPhone',
           label: 'Business Phone', 
           type: 'tel',
           value: settings.businessInfo.businessPhone,
-          onChange: (e) => handleInputChange('businessInfo', 'businessPhone', e.target.value),
+          onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('businessInfo', 'businessPhone', e.target.value),
           error: errors['businessInfo.businessPhone']
         },
       ],
@@ -201,7 +231,7 @@ const Settings = () => {
           label: 'Email Notifications', 
           type: 'checkbox', 
           value: settings.notifications.emailNotifications,
-          onChange: (e) => handleInputChange('notifications', 'emailNotifications', e.target.checked),
+          onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('notifications', 'emailNotifications', e.target.checked),
           description: 'Receive email alerts for low stock and other important events'
         },
         { 
@@ -209,7 +239,7 @@ const Settings = () => {
           label: 'Low Stock Threshold', 
           type: 'select', 
           value: settings.notifications.lowStockThreshold,
-          onChange: (e) => handleInputChange('notifications', 'lowStockThreshold', e.target.value),
+          onChange: (e: React.ChangeEvent<HTMLSelectElement>) => handleInputChange('notifications', 'lowStockThreshold', e.target.value),
           options: [
             { value: 'strict', label: 'Strict (Exactly at min level)' },
             { value: 'moderate', label: 'Moderate (10% below min level)' },
@@ -230,7 +260,7 @@ const Settings = () => {
           label: 'Auto Backup', 
           type: 'checkbox', 
           value: settings.dataManagement.autoBackup,
-          onChange: (e) => handleInputChange('dataManagement', 'autoBackup', e.target.checked),
+          onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('dataManagement', 'autoBackup', e.target.checked),
           description: 'Automatically back up data daily'
         },
         { 
@@ -238,7 +268,7 @@ const Settings = () => {
           label: 'Backup Location', 
           type: 'text', 
           value: settings.dataManagement.backupLocation,
-          onChange: (e) => handleInputChange('dataManagement', 'backupLocation', e.target.value),
+          onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('dataManagement', 'backupLocation', e.target.value),
           disabled: !settings.dataManagement.autoBackup,
           error: errors['dataManagement.backupLocation']
         },
@@ -270,7 +300,7 @@ const Settings = () => {
           label: 'Enable Two-Factor Authentication', 
           type: 'checkbox', 
           value: settings.security.twoFactorAuth,
-          onChange: (e) => handleInputChange('security', 'twoFactorAuth', e.target.checked),
+          onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('security', 'twoFactorAuth', e.target.checked),
           description: 'Add an extra layer of security to your account'
         },
         { 
@@ -278,7 +308,7 @@ const Settings = () => {
           label: 'Session Timeout (minutes)', 
           type: 'number', 
           value: settings.security.sessionTimeout,
-          onChange: (e) => handleInputChange('security', 'sessionTimeout', parseInt(e.target.value, 10) || 30),
+          onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('security', 'sessionTimeout', parseInt(e.target.value, 10) || 30),
           min: 5,
           max: 120,
           error: errors['security.sessionTimeout']

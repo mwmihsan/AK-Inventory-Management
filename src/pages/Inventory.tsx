@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Filter, ArrowUp, ArrowDown, Eye, Edit2 } from 'lucide-react';
+import { Plus, Search, Filter, ArrowUp, ArrowDown, Eye, Edit2, Package } from 'lucide-react';
 import { useInventory } from '../context/InventoryContext';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
@@ -145,22 +145,84 @@ const Inventory: React.FC = () => {
     });
     setIsFilterModalOpen(false);
   };
+
+  // Mobile Card View Component
+  const MobileProductCard = ({ product }: { product: Product }) => (
+    <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
+      <div className="flex items-start justify-between">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-medium text-gray-900 truncate">{product.name}</h3>
+          {product.barcode && (
+            <p className="text-xs text-gray-500 mt-1">SKU: {product.barcode}</p>
+          )}
+        </div>
+        <Badge variant="default" className="ml-2 flex-shrink-0">
+          {product.category}
+        </Badge>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-4 text-sm">
+        <div>
+          <span className="text-gray-500">Stock:</span>
+          <div className="mt-1">
+            <Badge variant={getStockStatus(product)}>
+              {product.currentStock} {product.unit}
+            </Badge>
+          </div>
+        </div>
+        <div>
+          <span className="text-gray-500">Price:</span>
+          <p className="font-medium mt-1">Rs {product.unitPrice.toFixed(2)} / {product.unit}</p>
+        </div>
+      </div>
+      
+      {product.currentStock <= product.minStockLevel && (
+        <div className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
+          Min level: {product.minStockLevel} {product.unit}
+        </div>
+      )}
+      
+      <div className="flex space-x-2 pt-2">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          icon={<Eye size={14} />}
+          onClick={() => openViewModal(product)}
+          className="flex-1"
+        >
+          View
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm"
+          icon={<Edit2 size={14} />}
+          onClick={() => openEditModal(product)}
+          className="flex-1"
+        >
+          Edit
+        </Button>
+      </div>
+    </div>
+  );
   
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <h1 className="text-2xl font-bold text-gray-900">Inventory</h1>
+    <div className="space-y-4 sm:space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Inventory</h1>
         <Button 
           variant="primary" 
           icon={<Plus size={16} />}
           onClick={() => setIsAddModalOpen(true)}
+          className="w-full sm:w-auto"
         >
           Add New Product
         </Button>
       </div>
       
       <Card>
-        <div className="flex flex-col lg:flex-row gap-4 mb-6">
+        {/* Search and Filter Bar */}
+        <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:gap-4 mb-6">
           <div className="relative flex-grow">
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
               <Search size={18} className="text-gray-400" />
@@ -168,22 +230,28 @@ const Inventory: React.FC = () => {
             <input
               type="text"
               placeholder="Search products..."
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <Button 
-            variant="outline" 
+            variant={Object.values(filters).some(f => f) ? "primary" : "outline"}
             icon={<Filter size={16} />}
-            className="lg:w-auto"
+            className="w-full sm:w-auto"
             onClick={() => setIsFilterModalOpen(true)}
           >
             Filter
+            {Object.values(filters).some(f => f) && (
+              <span className="ml-1 bg-white bg-opacity-20 text-xs px-1.5 py-0.5 rounded">
+                {Object.values(filters).filter(f => f).length}
+              </span>
+            )}
           </Button>
         </div>
         
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden lg:block overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -265,7 +333,7 @@ const Inventory: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ${product.unitPrice.toFixed(2)} / {product.unit}
+                    Rs {product.unitPrice.toFixed(2)} / {product.unit}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <Button 
@@ -290,13 +358,29 @@ const Inventory: React.FC = () => {
               ))}
             </tbody>
           </table>
-          
-          {sortedProducts.length === 0 && (
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="lg:hidden space-y-4">
+          {sortedProducts.length > 0 ? (
+            sortedProducts.map((product) => (
+              <MobileProductCard key={product.id} product={product} />
+            ))
+          ) : (
             <div className="text-center py-8 text-gray-500">
-              No products found. Try adjusting your search or filters.
+              <Package size={48} className="mx-auto text-gray-300 mb-4" />
+              <p>No products found</p>
+              <p className="text-sm">Try adjusting your search or filters</p>
             </div>
           )}
         </div>
+
+        {/* Desktop Empty State */}
+        {sortedProducts.length === 0 && (
+          <div className="hidden lg:block text-center py-8 text-gray-500">
+            No products found. Try adjusting your search or filters.
+          </div>
+        )}
       </Card>
 
       {/* Add Product Modal */}
@@ -333,7 +417,7 @@ const Inventory: React.FC = () => {
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Unit</label>
               <select
@@ -360,7 +444,7 @@ const Inventory: React.FC = () => {
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Current Stock</label>
               <input
@@ -401,11 +485,11 @@ const Inventory: React.FC = () => {
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
-          <div className="flex justify-end space-x-3 mt-6">
-            <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
+          <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6">
+            <Button variant="outline" onClick={() => setIsAddModalOpen(false)} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button variant="primary" onClick={handleAddProduct}>
+            <Button variant="primary" onClick={handleAddProduct} className="w-full sm:w-auto">
               Add Product
             </Button>
           </div>
@@ -455,7 +539,7 @@ const Inventory: React.FC = () => {
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Unit</label>
               <select
@@ -482,7 +566,7 @@ const Inventory: React.FC = () => {
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Current Stock</label>
               <input
@@ -523,7 +607,7 @@ const Inventory: React.FC = () => {
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
-          <div className="flex justify-end space-x-3 mt-6">
+          <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6">
             <Button 
               variant="outline" 
               onClick={() => {
@@ -536,10 +620,11 @@ const Inventory: React.FC = () => {
                   leadTime: 7,
                 });
               }}
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
-            <Button variant="primary" onClick={handleEditProduct}>
+            <Button variant="primary" onClick={handleEditProduct} className="w-full sm:w-auto">
               Save Changes
             </Button>
           </div>
@@ -575,7 +660,7 @@ const Inventory: React.FC = () => {
             </div>
             <div>
               <h4 className="text-sm font-medium text-gray-500">Unit Price</h4>
-              <p className="mt-1 text-sm text-gray-900">${selectedProduct.unitPrice.toFixed(2)}</p>
+              <p className="mt-1 text-sm text-gray-900">Rs {selectedProduct.unitPrice.toFixed(2)}</p>
             </div>
             <div>
               <h4 className="text-sm font-medium text-gray-500">Current Stock</h4>
@@ -616,6 +701,7 @@ const Inventory: React.FC = () => {
                   setIsViewModalOpen(false);
                   setSelectedProduct(null);
                 }}
+                className="w-full sm:w-auto"
               >
                 Close
               </Button>
@@ -644,7 +730,7 @@ const Inventory: React.FC = () => {
               ))}
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Min Stock</label>
               <input
@@ -666,7 +752,7 @@ const Inventory: React.FC = () => {
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Min Price</label>
               <input
@@ -690,11 +776,11 @@ const Inventory: React.FC = () => {
               />
             </div>
           </div>
-          <div className="flex justify-end space-x-3 mt-6">
-            <Button variant="outline" onClick={handleResetFilters}>
+          <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6">
+            <Button variant="outline" onClick={handleResetFilters} className="w-full sm:w-auto">
               Reset
             </Button>
-            <Button variant="primary" onClick={handleApplyFilters}>
+            <Button variant="primary" onClick={handleApplyFilters} className="w-full sm:w-auto">
               Apply Filters
             </Button>
           </div>

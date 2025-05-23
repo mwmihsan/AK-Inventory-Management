@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, ArrowUp, ArrowDown, Phone, Mail, Eye, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Search, ArrowUp, ArrowDown, Phone, Mail, Eye, Edit2, Trash2, Users } from 'lucide-react';
 import { useInventory } from '../context/InventoryContext';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
@@ -90,15 +90,81 @@ const Suppliers: React.FC = () => {
     setSelectedSupplier(supplier);
     setIsViewModalOpen(true);
   };
+
+  // Mobile Card View Component
+  const MobileSupplierCard = ({ supplier }: { supplier: Supplier }) => (
+    <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
+      <div className="flex items-start justify-between">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-medium text-gray-900 truncate">{supplier.name}</h3>
+          {supplier.contactPerson && (
+            <p className="text-sm text-gray-600 mt-1 truncate">{supplier.contactPerson}</p>
+          )}
+        </div>
+        <div className="text-xs text-gray-500 flex-shrink-0 ml-2">
+          {new Date(supplier.addedDate).toLocaleDateString()}
+        </div>
+      </div>
+      
+      <div className="space-y-2">
+        {supplier.phone && (
+          <div className="flex items-center text-sm text-gray-600">
+            <Phone size={14} className="mr-2 flex-shrink-0" />
+            <span className="truncate">{supplier.phone}</span>
+          </div>
+        )}
+        {supplier.email && (
+          <div className="flex items-center text-sm text-gray-600">
+            <Mail size={14} className="mr-2 flex-shrink-0" />
+            <span className="truncate">{supplier.email}</span>
+          </div>
+        )}
+        {supplier.address && (
+          <p className="text-sm text-gray-600 line-clamp-2">{supplier.address}</p>
+        )}
+      </div>
+      
+      <div className="flex space-x-2 pt-2">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          icon={<Eye size={14} />}
+          onClick={() => openViewModal(supplier)}
+          className="flex-1"
+        >
+          View
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm"
+          icon={<Edit2 size={14} />}
+          onClick={() => openEditModal(supplier)}
+          className="flex-1"
+        >
+          Edit
+        </Button>
+        <Button 
+          variant="danger" 
+          size="sm"
+          icon={<Trash2 size={14} />}
+          onClick={() => handleDeleteSupplier(supplier.id)}
+          className="flex-shrink-0"
+        >
+          <span className="hidden sm:inline">Delete</span>
+        </Button>
+      </div>
+    </div>
+  );
   
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <h1 className="text-2xl font-bold text-gray-900">Suppliers</h1>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Suppliers</h1>
         <Button 
           variant="primary" 
           icon={<Plus size={16} />}
           onClick={() => setIsAddModalOpen(true)}
+          className="w-full sm:w-auto"
         >
           Add New Supplier
         </Button>
@@ -113,14 +179,15 @@ const Suppliers: React.FC = () => {
             <input
               type="text"
               placeholder="Search suppliers..."
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
         
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden lg:block overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -220,13 +287,29 @@ const Suppliers: React.FC = () => {
               ))}
             </tbody>
           </table>
-          
-          {sortedSuppliers.length === 0 && (
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="lg:hidden space-y-4">
+          {sortedSuppliers.length > 0 ? (
+            sortedSuppliers.map((supplier) => (
+              <MobileSupplierCard key={supplier.id} supplier={supplier} />
+            ))
+          ) : (
             <div className="text-center py-8 text-gray-500">
-              No suppliers found. Try adjusting your search.
+              <Users size={48} className="mx-auto text-gray-300 mb-4" />
+              <p>No suppliers found</p>
+              <p className="text-sm">Try adjusting your search</p>
             </div>
           )}
         </div>
+
+        {/* Desktop Empty State */}
+        {sortedSuppliers.length === 0 && (
+          <div className="hidden lg:block text-center py-8 text-gray-500">
+            No suppliers found. Try adjusting your search.
+          </div>
+        )}
       </Card>
 
       {/* Add Supplier Modal */}
@@ -290,11 +373,11 @@ const Suppliers: React.FC = () => {
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
-          <div className="flex justify-end space-x-3 mt-6">
-            <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
+          <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6">
+            <Button variant="outline" onClick={() => setIsAddModalOpen(false)} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button variant="primary" onClick={handleAddSupplier}>
+            <Button variant="primary" onClick={handleAddSupplier} className="w-full sm:w-auto">
               Add Supplier
             </Button>
           </div>
@@ -366,7 +449,7 @@ const Suppliers: React.FC = () => {
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
-          <div className="flex justify-end space-x-3 mt-6">
+          <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6">
             <Button 
               variant="outline" 
               onClick={() => {
@@ -374,10 +457,11 @@ const Suppliers: React.FC = () => {
                 setSelectedSupplier(null);
                 setNewSupplier({});
               }}
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
-            <Button variant="primary" onClick={handleEditSupplier}>
+            <Button variant="primary" onClick={handleEditSupplier} className="w-full sm:w-auto">
               Save Changes
             </Button>
           </div>
@@ -438,6 +522,7 @@ const Suppliers: React.FC = () => {
                   setIsViewModalOpen(false);
                   setSelectedSupplier(null);
                 }}
+                className="w-full sm:w-auto"
               >
                 Close
               </Button>
