@@ -23,6 +23,9 @@ const Purchases: React.FC = () => {
   const [newPurchase, setNewPurchase] = useState<Partial<Purchase>>({
     date: new Date().toISOString().split('T')[0],
     paymentMethod: 'cash',
+    quantity: 0,
+    unitPrice: 0,
+    totalPrice: 0,
   });
   
   // Filter purchases based on search term, date range, and payment methods
@@ -109,7 +112,7 @@ const Purchases: React.FC = () => {
     setIsPaymentMethodModalOpen(false);
   };
 
-  // Handle product selection
+  // Handle product selection - REMOVED automatic price population
   const handleProductChange = (productId: string) => {
     const product = products.find(p => p.id === productId);
     if (product) {
@@ -117,8 +120,9 @@ const Purchases: React.FC = () => {
         ...newPurchase,
         productId,
         productName: product.name,
-        unitPrice: product.unitPrice,
-        totalPrice: product.unitPrice * (newPurchase.quantity || 0),
+        // Remove automatic price setting - user must enter manually
+        unitPrice: 0,
+        totalPrice: 0,
       });
     }
   };
@@ -135,12 +139,23 @@ const Purchases: React.FC = () => {
     }
   };
 
-  // Handle quantity change
+  // Handle quantity change - recalculate total
   const handleQuantityChange = (quantity: number) => {
+    const unitPrice = newPurchase.unitPrice || 0;
     setNewPurchase({
       ...newPurchase,
       quantity,
-      totalPrice: (newPurchase.unitPrice || 0) * quantity,
+      totalPrice: unitPrice * quantity,
+    });
+  };
+
+  // Handle unit price change - recalculate total
+  const handleUnitPriceChange = (unitPrice: number) => {
+    const quantity = newPurchase.quantity || 0;
+    setNewPurchase({
+      ...newPurchase,
+      unitPrice,
+      totalPrice: unitPrice * quantity,
     });
   };
 
@@ -164,6 +179,9 @@ const Purchases: React.FC = () => {
     setNewPurchase({
       date: new Date().toISOString().split('T')[0],
       paymentMethod: 'cash',
+      quantity: 0,
+      unitPrice: 0,
+      totalPrice: 0,
     });
     setIsAddModalOpen(false);
   };
@@ -315,7 +333,7 @@ const Purchases: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{purchase.productName}</div>
-                    <div className="text-xs text-gray-500">RS {purchase.unitPrice.toFixed(2)} per unit</div>
+                    <div className="text-xs text-gray-500">Rs {purchase.unitPrice.toFixed(2)} per unit</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {purchase.supplierName}
@@ -369,7 +387,7 @@ const Purchases: React.FC = () => {
         </div>
       </Card>
 
-      {/* Add Purchase Modal */}
+      {/* Add Purchase Modal - UPDATED */}
       <Modal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
@@ -395,7 +413,7 @@ const Purchases: React.FC = () => {
               <option value="">Select a product</option>
               {products.map(product => (
                 <option key={product.id} value={product.id}>
-                  {product.name} (Rs {product.unitPrice.toFixed(2)} per {product.unit})
+                  {product.name}
                 </option>
               ))}
             </select>
@@ -422,31 +440,45 @@ const Purchases: React.FC = () => {
                 type="number"
                 min="1"
                 value={newPurchase.quantity || ''}
-                onChange={(e) => handleQuantityChange(parseInt(e.target.value))}
+                onChange={(e) => handleQuantityChange(parseInt(e.target.value) || 0)}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                placeholder="Enter quantity"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Payment Method</label>
-              <select
-                value={newPurchase.paymentMethod}
-                onChange={(e) => setNewPurchase({ ...newPurchase, paymentMethod: e.target.value as 'cash' | 'credit' | 'cheque' })}
+              <label className="block text-sm font-medium text-gray-700">Unit Price (Rs)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={newPurchase.unitPrice || ''}
+                onChange={(e) => handleUnitPriceChange(parseFloat(e.target.value) || 0)}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              >
-                <option value="cash">Cash</option>
-                <option value="credit">Credit</option>
-                <option value="cheque">Cheque</option>
-              </select>
+                placeholder="Enter current price"
+              />
             </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Payment Method</label>
+            <select
+              value={newPurchase.paymentMethod}
+              onChange={(e) => setNewPurchase({ ...newPurchase, paymentMethod: e.target.value as 'cash' | 'credit' | 'cheque' })}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            >
+              <option value="cash">Cash</option>
+              <option value="credit">Credit</option>
+              <option value="cheque">Cheque</option>
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Total Price</label>
             <input
               type="number"
-              value={newPurchase.totalPrice || ''}
+              value={newPurchase.totalPrice || 0}
               disabled
-              className="mt-1 block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm"
+              className="mt-1 block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm text-gray-600"
             />
+            <p className="text-xs text-gray-500 mt-1">Automatically calculated: Quantity × Unit Price</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Notes</label>
@@ -455,6 +487,7 @@ const Purchases: React.FC = () => {
               onChange={(e) => setNewPurchase({ ...newPurchase, notes: e.target.value })}
               rows={3}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              placeholder="Optional notes about this purchase"
             />
           </div>
           <div className="flex justify-end space-x-3 mt-6">
@@ -464,7 +497,7 @@ const Purchases: React.FC = () => {
             <Button 
               variant="primary" 
               onClick={handleAddPurchase}
-              disabled={!newPurchase.productId || !newPurchase.supplierId || !newPurchase.quantity}
+              disabled={!newPurchase.productId || !newPurchase.supplierId || !newPurchase.quantity || !newPurchase.unitPrice}
             >
               Add Purchase
             </Button>
